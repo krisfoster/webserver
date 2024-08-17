@@ -1,0 +1,17 @@
+# Local build
+FROM gcr.io/distroless/java-base-debian12
+COPY target/webserver.dynamic-optimized /
+COPY src/main/resources/static /site
+EXPOSE 8000
+ENTRYPOINT ["/webserver.dynamic-optimized", "-b", "0.0.0.0", "-d", "/site"]
+
+# Multistage build
+# FROM container-registry.oracle.com/graalvm/native-image:23 AS nativebuild
+# WORKDIR /build
+# RUN mvn -Dmaven.test.skip=true -Pdynamic-size-optimized native:compile
+
+# FROM gcr.io/distroless/java-base-debian12
+# COPY --from=nativebuild /build/webserver.dynamic-optimized /
+# COPY src/main/resources/static /site
+# EXPOSE 8000
+# ENTRYPOINT ["/webserver.dynamic-optimized", "-b", "0.0.0.0", "-d", "/site"]

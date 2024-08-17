@@ -1,0 +1,6 @@
+# Local build
+FROM scratch
+COPY target/webserver.static-upx /
+COPY src/main/resources/static /site
+EXPOSE 8000
+ENTRYPOINT ["/webserver.static-upx", "-b", "0.0.0.0", "-d", "/site"]

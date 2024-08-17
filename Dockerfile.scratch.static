@@ -1,0 +1,18 @@
+# Local build
+FROM scratch
+COPY target/webserver.static /
+COPY src/main/resources/static /site
+EXPOSE 8000
+ENTRYPOINT ["/webserver.static", "-b", "0.0.0.0", "-d", "/site"]
+
+
+# Multistage build
+# FROM container-registry.oracle.com/graalvm/native-image:23-muslib AS nativebuild
+# WORKDIR /build
+# RUN mvn -Dmaven.test.skip=true -Pfully-static native:compile
+
+# FROM scratch
+# COPY --from=nativebuild /build/webserver.static /
+# COPY src/main/resources/static /site
+# EXPOSE 8000
+# ENTRYPOINT ["/webserver.static", "-b", "0.0.0.0", "-d", "/site"]
