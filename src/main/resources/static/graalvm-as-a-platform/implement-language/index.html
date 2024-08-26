@@ -81,18 +81,18 @@ It aims to use most of the available <a href="/graalvm-as-a-platform/language-im
     <pre><code class="language-shell"> git clone https://github.com/graalvm/simplelanguage
 </code></pre>
   </li>
-  <li>Execute <code>mvn package</code> from the SimpleLanguage folder to build the language. Before that, verify that <code>native-image</code> is available with your GraalVM installation to avoid a build failure:
+  <li>Execute <code>./mvnw package</code> from the SimpleLanguage folder to build the language. Before that, verify that <code>native-image</code> is available with your GraalVM installation to avoid a build failure:
     <pre><code class="language-shell"> cd simplelanguage
 </code></pre>
     <pre><code class="language-shell"> native-image --version
 </code></pre>
-    <pre><code class="language-shell"> mvn package
+    <pre><code class="language-shell"> ./mvnw package
 </code></pre>
     <p>The command builds the <code>slnative</code> executable in the <code>simplelanguage/native</code> directory and the <code>sl-component.jar</code> language component which can be later installed into GraalVM using the <a href="/reference-manual/graalvm-updater/">GraalVM Updater</a> tool.</p>
 
     <p>You can disable the SimpleLanguage native executable build during the packaging phase by running:</p>
     <pre><code class="language-shell"> export SL_BUILD_NATIVE=false
- mvn package
+ ./mvnw package
 </code></pre>
   </li>
   <li>Run SimpleLanguage from the project root folder:
@@ -179,7 +179,7 @@ Learn more <a href="/tools/igv/">here</a>.</p>
 <h2 id="simplelanguage-component-for-graalvm">SimpleLanguage Component for GraalVM</h2>
 
 <p>Languages implemented with the <a href="https://github.com/oracle/graal/tree/master/truffle">Truffle framework</a> can be packaged as <em>components</em> which later can be installed into GraalVM using the <a href="/reference-manual/graalvm-updater/">GraalVM Updater</a> tool.
-Running <code>mvn package</code> in the SimpleLanguage folder also builds a <code>sl-component.jar</code>.
+Running <code>./mvnw package</code> in the SimpleLanguage folder also builds a <code>sl-component.jar</code>.
 This file is the SimpleLanguage component for GraalVM and can be installed by running:</p>
 <pre><code class="language-shell">gu -L install /path/to/sl-component.jar
 </code></pre>
@@ -187,7 +187,7 @@ This file is the SimpleLanguage component for GraalVM and can be installed by ru
 <h2 id="simplelanguage-native-image">SimpleLanguage Native Image</h2>
 
 <p>A language built with Truffle can be AOT compiled using <a href="/reference-manual/native-image/">Native Image</a>.
-Running <code>mvn package</code> in the SimpleLanguage folder also builds a <code>slnative</code> executable in the <code>native</code> directory.
+Running <code>./mvnw package</code> in the SimpleLanguage folder also builds a <code>slnative</code> executable in the <code>native</code> directory.
 This executable is the full SimpleLanguage implementation as a single native application, and has no need for GraalVM in order to execute SimpleLanguage code.
 Besides this, a big advantage of using the native executable when compared to running on GraalVM is the greatly faster startup time as shown bellow:</p>
 <pre><code class="language-shell">time ./sl language/tests/HelloWorld.sl
@@ -221,7 +221,7 @@ When using the native executable we see that the execution takes only 4ms, showi
 Since the native executable build can take a bit of time, we provide the option to skip this build by setting the <code>SL_BUILD_NATIVE</code> environment variable to <code>false</code> like so:</p>
 
 <pre><code class="language-shell">export SL_BUILD_NATIVE=false
-mvn package
+./mvnw package
 ...
 [INFO]
 [INFO] ------------------------------------------------------------------------

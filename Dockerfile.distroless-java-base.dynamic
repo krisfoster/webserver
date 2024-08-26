@@ -1,17 +1,5 @@
 # Local build
 FROM gcr.io/distroless/java-base-debian12
 COPY target/webserver /
-COPY src/main/resources/static /site
-EXPOSE 8000
-ENTRYPOINT ["/webserver", "-b", "0.0.0.0", "-d", "/site"]
-
-# Multistage build
-# FROM container-registry.oracle.com/graalvm/native-image:23 AS nativebuild
-# WORKDIR /build
-# RUN mvn -Dmaven.test.skip=true native:compile
-
-# FROM gcr.io/distroless/java-base-debian12
-# COPY --from=nativebuild /build/webserver /
-# COPY src/main/resources/static /site
-# EXPOSE 8000
-# ENTRYPOINT ["/webserver", "-b", "0.0.0.0", "-d", "/site"]
+EXPOSE 8080
+ENTRYPOINT ["/webserver"]

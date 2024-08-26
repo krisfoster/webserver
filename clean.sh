@@ -1,5 +1,5 @@
 #!/bin/sh
 set +e
 
-mvn clean
+./mvnw clean
 docker images webserver -q | grep -v TAG | awk '{print($1)}' | xargs docker rmi

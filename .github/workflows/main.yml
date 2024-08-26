@@ -15,28 +15,19 @@ jobs:
         github-token: ${{ secrets.GITHUB_TOKEN }}
     - name: Run Spring Boot Web Server
       run: |
-        # Setup musl toolchain
-        ./setup-musl.sh
-        export PATH="$PWD/musl-toolchain/bin:$PATH"
-        #
-        
-        # Download upx
-        ./setup-upx.sh
-        #
-
-        # Build JAR (Debian Slim)
-        ./build-jar.sh
-        container_id=$(docker run -d --rm -p8000:8000 webserver:debian-slim.jar)
-        sleep 5s
-        curl "http://localhost:8000"
-        docker stop $container_id
-        #
+        # # Build JAR (Debian Slim)
+        # ./build-jar.sh
+        # container_id=$(docker run -d --rm -p8080:8080 webserver:debian-slim.jar)
+        # sleep 5s
+        # curl "http://localhost:8080"
+        # docker stop $container_id
+        # #
 
         # Build Jlink custom runtime (Distroless Java Base)
         ./build-jlink.sh
-        container_id=$(docker run -d --rm -p8000:8000 webserver:distroless-java-base.jlink)
+        container_id=$(docker run -d --rm -p8080:8080 webserver:distroless-java-base.jlink)
         sleep 5s
-        curl "http://localhost:8000"
+        curl "http://localhost:8080"
         docker stop $container_id
         #
 
@@ -50,41 +41,50 @@ jobs:
 
         # Build dynamic image (Distroless Java Base)
         ./build-dynamic-image.sh
-        container_id=$(docker run -d --rm -p8000:8000 webserver:distroless-java-base.dynamic)
+        container_id=$(docker run -d --rm -p8080:8080 webserver:distroless-java-base.dynamic)
         sleep 5s
-        curl "http://localhost:8000"
+        curl "http://localhost:8080"
         docker stop $container_id
         #
 
         # Build dynamic image, optimized for size (Distroless Java Base)
         ./build-dynamic-image-optimized.sh
-        container_id=$(docker run -d --rm -p8000:8000 webserver:distroless-java-base.dynamic-optimized)
+        container_id=$(docker run -d --rm -p8080:8080 webserver:distroless-java-base.dynamic-optimized)
         sleep 5s
-        curl "http://localhost:8000"
+        curl "http://localhost:8080"
         docker stop $container_id
+        #
+        
+        # Setup musl toolchain
+        ./setup-musl.sh
+        export PATH="$PWD/musl-toolchain/bin:$PATH"
         #
 
         # Build mostly static image (Distroless Base)
         ./build-mostly-static-image.sh
-        container_id=$(docker run -d --rm -p8000:8000 webserver:distroless-base.mostly-static)
+        container_id=$(docker run -d --rm -p8080:8080 webserver:distroless-base.mostly-static)
         sleep 5s
-        curl "http://localhost:8000"
+        curl "http://localhost:8080"
         docker stop $container_id
         #
 
         # Build fully static image (Scratch)
         ./build-static-image.sh
-        container_id=$(docker run -d --rm -p8000:8000 webserver:scratch.static)
+        container_id=$(docker run -d --rm -p8080:8080 webserver:scratch.static)
         sleep 5s
-        curl "http://localhost:8000"
+        curl "http://localhost:8080"
         docker stop $container_id
+        #
+
+        # Download upx
+        ./setup-upx.sh
         #
 
         # Build fully static compressed image (Scratch UPX)
         ./build-static-upx-image.sh
-        container_id=$(docker run -d --rm -p8000:8000 webserver:scratch.static-upx)
+        container_id=$(docker run -d --rm -p8080:8080 webserver:scratch.static-upx)
         sleep 5s
-        curl "http://localhost:8000"
+        curl "http://localhost:8080"
         docker stop $container_id
         #
 

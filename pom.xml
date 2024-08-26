@@ -40,7 +40,7 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
-				<!-- <configuration>
+				<configuration>
 					<mainClass>com.example.webserver.WebserverApplication</mainClass>
 					<image>
 						<builder>paketobuildpacks/builder-jammy-buildpackless-tiny</builder>
@@ -49,7 +49,7 @@
 						<buildpack>paketobuildpacks/java-native-image</buildpack>
 						</buildpacks>
 					</image>
-				</configuration> -->
+				</configuration>
 				<executions>
 					<execution>
 						<goals>
@@ -132,7 +132,8 @@
 						<configuration>
 							<imageName>webserver.static</imageName>
 							<buildArgs>
-								<buildArg>--static --libc=musl</buildArg>
+								<buildArg>--static</buildArg>
+								<buildArg>--libc=musl</buildArg>
 								<buildArg>-Os</buildArg>
 								<buildArg>--emit build-report</buildArg>
 							</buildArgs>

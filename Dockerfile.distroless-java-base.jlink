@@ -1,25 +1,23 @@
 # Multistage build
-FROM container-registry.oracle.com/graalvm/jdk:21 AS build
+FROM container-registry.oracle.com/graalvm/jdk:22 AS build
+COPY . /webserver
+WORKDIR /webserver
+RUN ./mvnw clean package
+RUN ./mvnw dependency:build-classpath -Dmdep.outputFile=cp.txt
+RUN jdeps --ignore-missing-deps -q  --recursive --multi-release 21 --print-module-deps --class-path $(cat cp.txt) target/webserver-0.0.1-SNAPSHOT.jar
 RUN jlink \
         --module-path ${JAVA_HOME}/jmods \
-        --add-modules java.base \
+        --add-modules java.base,java.compiler,java.desktop,java.instrument,java.management,java.naming,java.net.http,java.prefs,java.rmi,java.scripting,java.security.jgss,java.sql,jdk.jfr,jdk.unsupported,org.graalvm.nativeimage \
         --verbose \
         --strip-debug \
         --compress zip-9 \
         --no-header-files \
         --no-man-pages \
         --strip-java-debug-attributes \
-        --output webserver-jlink
+        --output jlink-jre
 
 FROM gcr.io/distroless/java-base-debian12
-COPY --from=build /build/webserver-jlink /usr/lib/java
-COPY src/main/resources/static /site
-EXPOSE 8000
-ENTRYPOINT ["/usr/lib/java/bin/webserver", "-b", "0.0.0.0", "-d", "/site"]
-
-# Local build
-# FROM gcr.io/distroless/java-base-debian12
-# COPY webserver-jlink /usr/lib/java/bin
-# COPY src/main/resources/static /site
-# EXPOSE 8000
-# ENTRYPOINT ["/usr/lib/java/bin/webserver", "-b", "0.0.0.0", "-d", "/site"]
+COPY --from=build /webserver/target/webserver-0.0.1-SNAPSHOT.jar webserver-0.0.1-SNAPSHOT.jar
+COPY --from=build /webserver/jlink-jre jlink-jre
+EXPOSE 8080
+ENTRYPOINT ["jlink-jre/bin/java", "-jar", "webserver-0.0.1-SNAPSHOT.jar"]

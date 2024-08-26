@@ -108,7 +108,7 @@ For that, the following needs to be added to the plugins section of <code>pom.xm
 &lt;/plugin&gt;
 </code></pre>
 
-<p>Then, when you run the Maven package command <code>./mvnw package -Dpackaging=native-image</code>, you will get the following build artifacts:</p>
+<p>Then, when you run the Maven package command <code>././mvnww package -Dpackaging=native-image</code>, you will get the following build artifacts:</p>
 <pre><code>Finished generating 'micronautguide' in 2m 0s.
 
 Native Image Bundles: Bundle build output written to /home/testuser/micronaut-data-jdbc-repository-maven-java/target/micronautguide.output
@@ -169,7 +169,7 @@ target/micronautguide.output
 <p>As mentioned in the <code>--bundle-create</code> option description, it is also possible to let <code>native-image</code> build a bundle but not actually perform the image building.
 This might be useful if a user wants to move the bundle to a more powerful machine and build the image there.
 Modify the above <code>native-maven-plugin</code> configuration to also contain the argument <code>&lt;buildArg&gt;--dry-run&lt;/buildArg&gt;</code>. 
-Then running <code>./mvnw package -Dpackaging=native-image</code> takes only seconds and the created bundle is much smaller:</p>
+Then running <code>././mvnww package -Dpackaging=native-image</code> takes only seconds and the created bundle is much smaller:</p>
 <pre><code>Native Image Bundles: Bundle written to /home/testuser/micronaut-data-jdbc-repository-maven-java/target/micronautguide.nib
 
 [INFO] ------------------------------------------------------------------------

@@ -4,13 +4,15 @@ x86_64-linux-musl-native/
 zlib-1.2.13/
 
 # Build results
-webserver-jlink/
+jlink-jre/
 webserver.dynamic
 webserver.mostly-static
 webserver.static
 webserver.static-upx
 webserver-sbom
 webserver-compacted-gc
+cp.txt
+target/
 
 # VS Code
 .vscode/

@@ -1,17 +1,5 @@
 # Local build
 FROM gcr.io/distroless/base-debian12
 COPY target/webserver.mostly-static /
-COPY src/main/resources/static /site
-EXPOSE 8000
-ENTRYPOINT ["/webserver.mostly-static", "-b", "0.0.0.0", "-d", "/site"]
-
-# Multistage build
-# FROM container-registry.oracle.com/graalvm/native-image:23-muslib AS nativebuild
-# WORKDIR /build
-# RUN mvn -Dmaven.test.skip=true -Pmostly-static native:compile
-
-# FROM scratch
-# COPY --from=nativebuild /build/webserver.mostly-static /
-# COPY src/main/resources/static /site
-# EXPOSE 8000
-# ENTRYPOINT ["/webserver.mostly-static", "-b", "0.0.0.0", "-d", "/site"]
+EXPOSE 8080
+ENTRYPOINT ["/webserver.mostly-static"]

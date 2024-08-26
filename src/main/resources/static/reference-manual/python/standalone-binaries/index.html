@@ -97,7 +97,7 @@ To achieve this, run the <code>java</code> subcommand of GraalPy’s <code>stand
 
 <p>It creates a Java project <em>MyJavaApplication</em>. It includes a <em>pom.xml</em> file that makes it easy to generate a JAR file or a GraalVM native executable with Maven.
 You can open this Maven project with any Java IDE and edit the main class that was created to modify the Python embedding.
-To build the application, either use <code>mvn -Pjar package</code> to create a JAR file, or <code>mvn -Pnative package</code> to create a GraalVM native executable.</p>
+To build the application, either use <code>./mvnw -Pjar package</code> to create a JAR file, or <code>./mvnw -Pnative package</code> to create a GraalVM native executable.</p>
 
 <p>Take a look at the generated <em>pom.xml</em> file.
 There are some options to tweak the performance and footprint trade-off.

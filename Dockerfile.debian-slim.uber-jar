@@ -1,21 +1,10 @@
 # Multistage build
-FROM debian:12-slim
-WORKDIR /web
-RUN apt-get update && \
-    apt-get install -y wget && \
-    apt-get clean && \
-    wget -q https://github.com/graalvm/oracle-graalvm-ea-builds/releases/download/jdk-23.0.0-ea.23/graalvm-jdk-23.0.0-ea.23_linux-x64_bin.tar.gz -O graalvm.tar.gz && \
-    tar -xf graalvm.tar.gz && \
-    rm -f graalvm.tar.gz
-COPY index.html /web/index.html
-EXPOSE 8000
-ENTRYPOINT ["/web/graalvm-jdk-23.0.0-ea.23/bin/webserver", "-b", "0.0.0.0", "-d", "/site"]
+FROM container-registry.oracle.com/graalvm/jdk:22 AS build
+COPY . /webserver
+WORKDIR /webserver
+RUN ./mvnw clean package
 
-# Local build
-# FROM container-registry.oracle.com/java/openjdk:21-oraclelinux8
-# ARG JAR_FILE
-# EXPOSE 8000
-# COPY target/${JAR_FILE} webserver.jar
-# COPY src/main/resources/static /src/main/resources/static
-# ENTRYPOINT ["java"]
-# CMD ["-jar","webserver.jar"]
+FROM gcr.io/distroless/java21-debian12
+COPY --from=build /webserver/target/webserver-0.0.1-SNAPSHOT.jar webserver-0.0.1-SNAPSHOT.jar  
+EXPOSE 8080  
+ENTRYPOINT ["java", "-jar", "webserver-0.0.1-SNAPSHOT.jar"]

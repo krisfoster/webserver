@@ -23,19 +23,8 @@ Note that the website pages add 44M to the container size.
 * x86 Linux
 * `musl` toolchain
 * Container runtime such as [Rancher Desktop](https://docs.rancherdesktop.io/getting-started/installation/) or [Docker](https://www.docker.com/gettingstarted/) installed and running
-* [GraalVM for JDK 23 Early Access Build](https://github.com/graalvm/oracle-graalvm-ea-builds/releases). For all available installation options, visit the [Downloads section](https://www.graalvm.org/downloads/).
-
-## Setup
-
-1. Clone this repository with Git:
-    ```bash
-    git clone https://github.com/olyagpl/webserver.git 
-    ```
-
-2. To complete all steps in this demo, you need the following `zlib` packages installed: zlib.x86_64, zlib-devel.x86_64;zlib-static.x86_64.  Run the following script to download and configure the `musl` toolchain, and install `zlib` into the toolchain:
-    ```bash
-    ./setup-musl.sh
-    ```
+* [GraalVM for JDK 22](https://www.graalvm.org/downloads/)
+* [GraalVM for JDK 23 Early Access Build](https://github.com/graalvm/oracle-graalvm-ea-builds/releases)
 
 Below see the summary of base images that will/can be used in this workshop:
 
@@ -51,6 +40,16 @@ Below see the summary of base images that will/can be used in this workshop:
 
 > Distroless container images contain only your application and its runtime dependencies. They do not contain package managers, shells or any other programs you would expect to find in a standard Linux distribution. Learn more in ["Distroless" Container Images](https://github.com/GoogleContainerTools/distroless).
 
+## Setup
+
+Clone this repository with Git and enter the application directory:
+```bash
+git clone https://github.com/olyagpl/webserver.git 
+```
+```bash
+cd webserver
+```
+
 ## Step 1: Compile and Run the Application from a JAR File Inside a Container
 
 You are going to compile and run the application from a JAR in a Docker container.
@@ -60,21 +59,18 @@ The entrypoint of this image is equivalent to `java -jar`, so just specify a pat
 
 <!-- Alternatively, you can use [gcr.io/distroless/java21-debian12](https://github.com/GoogleContainerTools/distroless/blob/main/java/README.md) base image. It contains a minimal Linux, OpenJDK 21-based runtime. -->
 
-1. Enter the example directory and run the _build-jar.sh_ script:
-    ```bash
-    cd webserver
-    ```
+1. Run the _build-jar.sh_ script:
     ```bash
     ./build-jar.sh
     ```
 
 2.  Once the script finishes, a Docker image _webserver:debian-slim.jar_ should be available. Start the application using `docker run`:
     ```bash
-    docker run --rm -p8000:8000 webserver:debian-slim.jar
+    docker run --rm -p8080:8080 webserver:debian-slim.jar
     ```
 
-3. Open a browser and go to _http://<SERVER_IP>:8000/_, where the `<SERVER_IP>` is the public API address of the host. 
-If you are running the example locally, not on a remote host, just open [http://localhost:8000](http://localhost:8000).
+3. Open a browser and go to _http://<SERVER_IP>:8080/_, where the `<SERVER_IP>` is the public API address of the host. 
+If you are running the example locally, not on a remote host, just open [http://localhost:8080](http://localhost:8080).
 You see the GraalVM documentation pages served.
 
 4. Stop the running container. Find out the container image ID and stop it:
@@ -97,57 +93,73 @@ Jlink, or `jlink`, is a tool that generates a custom Java runtime image that con
 This is one of the approaches to create cloud native applications introduced in Java 11.
 
 Your application does not have to be modular, but you need to figure out which modules you application depends on. 
-To check required modules for this Spring Boot application, this command is sufficient:
-```bash
-jdeps --ignore-missing-deps -q  --recursive  --multi-release 21 --print-module-deps  --class-path 'mydeps/lib/*'  target/webserver-0.0.1-SNAPSHOT.jar
-```
 
-To create a custom runtime using `jlink` for this application, run:
-```bash
-jlink \
-        --module-path ${JAVA_HOME}/jmods \
-        --add-modules java.base \
-        --verbose \
-        --strip-debug \
-        --compress zip-9 \
-        --no-header-files \
-        --no-man-pages \
-        --strip-java-debug-attributes \
-        --output webserver-jlink
-```
+1. First, run this command to get the classpath:
+    ```bash
+    ./mvnw dependency:build-classpath -Dmdep.outputFile=cp.txt
+    ```
+    This will generate a _cp.txt_ file containing the classpath with all the dependencies.
+
+2. Then run `jdeps` with the classpath to check required modules for this Spring Boot application:
+    ```bash
+    jdeps --ignore-missing-deps -q  --recursive --multi-release 21 --print-module-deps --class-path $(cat cp.txt) target/webserver-0.0.1-SNAPSHOT.jar
+    ```
+3. Once you have the module names, create a custom runtime using `jlink` for this application as follows:
+    ```bash
+    jlink \
+            --module-path ${JAVA_HOME}/jmods \
+            --add-modules java.base,java.compiler,java.desktop,java.instrument,java.management,java.naming,java.net.http,java.prefs,java.rmi,java.scripting,java.security.jgss,java.sql,jdk.jfr,jdk.unsupported,org.graalvm.nativeimage \
+            --verbose \
+            --strip-debug \
+            --compress zip-9 \
+            --no-header-files \
+            --no-man-pages \
+            --strip-java-debug-attributes \
+            --output jlink-jre
+    ```
+4. Lastly, run the application using the custom runtime:
+    ```bash
+    ./jlink-jre/bin/java -jar target/webserver-0.0.1-SNAPSHOT.jar 
+    ```
 
 However, we prepared the script _build-jlink-runner.sh_ that runs `docker build` using the _Dockerfile.distroless-java-base.jlink_.
 The Dockerfile contains a multistage build: first it generates a Jlink custom runtime on a full JDK; then copies the runtime image folder along with static website pages into a Java base container image, and sets the entrypoint:
+
 ```
-FROM container-registry.oracle.com/graalvm/jdk:21 AS build
+FROM container-registry.oracle.com/graalvm/jdk:22 AS build
+COPY . /webserver
+WORKDIR /webserver
+RUN ./mvnw clean package
+RUN ./mvnw dependency:build-classpath -Dmdep.outputFile=cp.txt
+RUN jdeps --ignore-missing-deps -q  --recursive --multi-release 21 --print-module-deps --class-path $(cat cp.txt) target/webserver-0.0.1-SNAPSHOT.jar
 RUN jlink \
         --module-path ${JAVA_HOME}/jmods \
-        --add-modules java.base \
+        --add-modules java.base,java.compiler,java.desktop,java.instrument,java.management,java.naming,java.net.http,java.prefs,java.rmi,java.scripting,java.security.jgss,java.sql,jdk.jfr,jdk.unsupported,org.graalvm.nativeimage \
         --verbose \
         --strip-debug \
         --compress zip-9 \
         --no-header-files \
         --no-man-pages \
         --strip-java-debug-attributes \
-        --output webserver-jlink
+        --output jlink-jre
 
 FROM gcr.io/distroless/java-base-debian12
-COPY --from=build /build/webserver-jlink /usr/lib/java
-COPY src/main/resources/static /site
-EXPOSE 8000
-ENTRYPOINT ["/usr/lib/java/bin/webserver", "-b", "0.0.0.0", "-d", "/site"]
+COPY --from=build /webserver/target/webserver-0.0.1-SNAPSHOT.jar webserver-0.0.1-SNAPSHOT.jar
+COPY --from=build /webserver/jlink-jre jlink-jre
+EXPOSE 8080
+ENTRYPOINT ["jlink-jre/bin/java", "-jar", "webserver-0.0.1-SNAPSHOT.jar"]
 ```
 
 1. Run the script:
     ```
-    ./build-jlink-runner.sh
+    ./build-jlink.sh
     ```
 
 2. Run the container image, mapping the ports:
     ```bash
-    docker run --rm -p8000:8000 webserver:distroless-java-base.jlink
+    docker run --rm -p8080:8080 webserver:distroless-java-base.jlink
     ```
-    Open a browser and navigate to _http://<SERVER_IP>:8000/_ or to [localhost:8000/](http://localhost:8000/) to see the GraalVM website running.
+    Open a browser and navigate to _http://<SERVER_IP>:8080/_ or to [localhost:8080/](http://localhost:8080/) to see the GraalVM website running.
 
 3. Stop the running container. Find out the container image ID and stop it:
     ```bash
@@ -166,17 +178,17 @@ docker images webserver
 
 ## Step 3: Build and Run a Native Image Inside a Container Using Paketo Buildpacks
 
+> Requires [GraalVM for JDK 22](https://www.graalvm.org/downloads/).
+
 Spring Boot supports building a native image in a container using the [Paketo Buildpack for Oracle](https://github.com/paketo-buildpacks/oracle) which provides GraalVM Native Image. 
 
 The mechanism is that the Paketo builder pulls the [Jammy Tiny Stack image](https://github.com/paketo-buildpacks/builder-jammy-tiny) (Ubuntu Jammy Jellyfish build distroless-like image) which contains no buildpacks. 
-Then you point the builder to a Docker image you would like to pull.
-(See the [Paketo reference documentation](https://paketo.io/docs/).)
-
-For this workshop, we would like to use the [Paketo Buildpack for Oracle](https://github.com/paketo-buildpacks/oracle) explicitly requesting the Native Image tool.
+Then you point the "builder" image to the "creator" image (see the [Paketo reference documentation](https://paketo.io/docs/)). 
+In our case, we would like to point to the [Paketo Buildpack for Oracle](https://github.com/paketo-buildpacks/oracle) explicitly requesting the Native Image tool.
 
 > Note that if you do not specify Oracle's buildpack, it will pull the default buildpack, which can result in reduced performance. 
 
-1. Open the _pom.xml_ file, find the `spring-boot-maven-plugin` declaration, and uncomment the following lines in the `<configuration>` element: 
+1. Open the _pom.xml_ file, and find the `spring-boot-maven-plugin` declaration:
     ```xml
     <configuration>
         <image>
@@ -197,9 +209,9 @@ For this workshop, we would like to use the [Paketo Buildpack for Oracle](https:
 
 3. Once the build completes, a container image should be available. Run the container image, mapping the ports:
     ```bash
-    docker run --rm -p8000:8000 docker.io/library/webserver:0.0.1-SNAPSHOT
+    docker run --rm -p8080:8080 docker.io/library/webserver:0.0.1-SNAPSHOT
     ```
-    Open a browser and navigate to _http://<SERVER_IP>:8000/_ or to [localhost:8000/](http://localhost:8000/) to see the GraalVM website running.
+    Open a browser and navigate to _http://<SERVER_IP>:8080/_ or to [localhost:8080/](http://localhost:8080/) to see the GraalVM website running.
 
     The server running from the native image started inside a container! The container started in just <add number> milliseconds!
 
@@ -234,7 +246,7 @@ The project configuration already contains all necessary plugins, including [Nat
 
 You can build this web server ahead of time into a native executable, on your host machine, just like this:
 ```bash
-mvn -Pnative native:compile
+./mvnw -Pnative native:compile
 ```
 The command will compile the application and create a fully dynamically linked native image, `webserver`, in the _target/_ directory.
 
@@ -247,9 +259,9 @@ However, we prepared a script _build-dynamic-image.sh_, for your convenience, th
 
 2. Run the container image, mapping the ports:
     ```bash
-    docker run --rm -p8000:8000 webserver:distroless-java-base.dynamic
+    docker run --rm -p8080:8080 webserver:distroless-java-base.dynamic
     ```
-    Open a browser and navigate to _http://<SERVER_IP>:8000/_ or to [localhost:8000/](http://localhost:8000/) to see the GraalVM website running.
+    Open a browser and navigate to _http://<SERVER_IP>:8080/_ or to [localhost:8080/](http://localhost:8080/) to see the GraalVM website running.
 
 3. Stop the running container. Find out the container image ID and stop it:
     ```bash
@@ -270,7 +282,16 @@ docker images webserver
 
 _This is where the fun begins._
 
-> Requires [GraalVM for JDK 23 Early Access Build](https://github.com/graalvm/oracle-graalvm-ea-builds/releases).
+> Requires [GraalVM for JDK 23 Early Access Build](https://github.com/graalvm/oracle-graalvm-ea-builds/releases). Run:
+```bash
+wget -q https://github.com/graalvm/oracle-graalvm-ea-builds/releases/download/jdk-23.0.0-ea.23/graalvm-jdk-23.0.0-ea.23_linux-x64_bin.tar.gz && tar -xf graalvm-jdk-23.0.0-ea.23_linux-x64_bin.tar.gz && rm -f graalvm-jdk-23.0.0-ea.23_linux-x64_bin.tar.gz
+```
+```bash
+export JAVA_HOME=/home/opc/graalvm-jdk-23+36.1
+```
+```bash
+export PATH=/home/opc/graalvm-jdk-23+36.1/bin:$PATH
+```
 
 Next we are going to build a fully dynamically linked native image **with the file size optimization on**, giving it a different name.
 For that, we provide a separate Maven profile to differentiate this run from the default build.
@@ -309,9 +330,9 @@ The _Dockerfile.distroless-java-base.dynamic-optimized_ Dockerfile copies this n
 
 2. Run the container image, mapping the ports:
     ```bash
-    docker run --rm -p8000:8000 webserver:distroless-java-base.dynamic-optimized
+    docker run --rm -p8080:8080 webserver:distroless-java-base.dynamic-optimized
     ```
-    Open a browser and navigate to _http://<SERVER_IP>:8000/_ or to [localhost:8000/](http://localhost:8000/) to see the GraalVM website running.
+    Open a browser and navigate to _http://<SERVER_IP>:8080/_ or to [localhost:8080/](http://localhost:8080/) to see the GraalVM website running.
 
 3. Stop the running container. Find out the container image ID and stop it:
     ```bash
@@ -330,7 +351,7 @@ docker images webserver
 
 ## Step 6: Build a Size-Optimized Mostly Static Native Image Locally and Run Inside a Container
 
-> Requires [GraalVM for JDK 23 Early Access Build](https://github.com/graalvm/oracle-graalvm-ea-builds/releases).
+> Requires [GraalVM for JDK 23 Early Access Build](https://github.com/graalvm/oracle-graalvm-ea-builds/releases). (See Step 5.)
 
 A mostly-static native image links all the shared libraries on which it relies (`zlib`, JDK-shared static libraries) except the standard C library, `libc`. 
 This type of native image is useful for deployment on a distroless base container image.
@@ -366,9 +387,9 @@ A separate Maven profile exists for this build:
 
 2. Run the container image, mapping the ports:
     ```bash
-    docker run --rm -p8000:8000 webserver:distroless-base.mostly-static
+    docker run --rm -p8080:8080 webserver:distroless-base.mostly-static
     ```
-    Open a browser and navigate to _http://<SERVER_IP>:8000/_ or to [localhost:8000/](http://localhost:8000/) to see the GraalVM website running.
+    Open a browser and navigate to _http://<SERVER_IP>:8080/_ or to [localhost:8080/](http://localhost:8080/) to see the GraalVM website running.
 
 3. Stop the running container. Find out the container image ID and stop it:
     ```bash
@@ -377,7 +398,6 @@ A separate Maven profile exists for this build:
     ```bash
     docker stop <image id>
     ```
-
 
 Let's check the size of this container image:
 ```bash
@@ -388,8 +408,12 @@ docker images webserver
  
 ## Step 7: Build a Size-Optimized Fully Static Native Image Locally and Run Inside a Container
 
-> Requires [GraalVM for JDK 23 Early Access Build](https://github.com/graalvm/oracle-graalvm-ea-builds/releases).
-> Requires the `musl` toolchain.
+> Requires [GraalVM for JDK 23 Early Access Build](https://github.com/graalvm/oracle-graalvm-ea-builds/releases).  (See Step 5.)
+
+> Requires the `musl` toolchain with `zlib`. Run the following script to download and configure the `musl` toolchain, and install `zlib` into the toolchain:
+```bash
+./setup-musl.sh
+```
 
 A fully static native image is a statically linked binary that you can use without any additional library dependencies.
 It is easy to deploy on a slim or distroless container, even a [_scratch_ container](https://hub.docker.com/_/scratch). 
@@ -429,9 +453,9 @@ A separate Maven profile exists for this build:
 
 2. Run the container image, mapping the ports:
     ```bash
-    docker run --rm -p8000:8000 webserver:scratch.static
+    docker run --rm -p8080:8080 webserver:scratch.static
     ```
-    Open a browser and navigate to _http://<SERVER_IP>:8000/_ or to [localhost:8000/](http://localhost:8000/) to see the GraalVM website running.
+    Open a browser and navigate to _http://<SERVER_IP>:8080/_ or to [localhost:8080/](http://localhost:8080/) to see the GraalVM website running.
     
     As a result you get the tiny container image with a fully functional and deployable server application.
     **Note that the website static pages added 44M to the container images size!**
@@ -462,7 +486,7 @@ docker images webserver
 
 [to do]
 
-## Step 8: Compress with UPX
+## Step 8: Compress a Static Native Image with UPX and Run Inside a Container
 
 _What can you do next to reduce the size even more?_
 
@@ -481,9 +505,9 @@ Then package it into a _scratch_ container.
 
 3. Run the container image, mapping the ports:
     ```bash
-    docker run --rm -p8000:8000 webserver:scratch.static-upx
+    docker run --rm -p8080:8080 webserver:scratch.static-upx
     ```
-    Open a browser and navigate to _http://<SERVER_IP>:8000/_ or to [localhost:8000/](http://localhost:8000/) to see the GraalVM website running.
+    Open a browser and navigate to _http://<SERVER_IP>:8080/_ or to [localhost:8080/](http://localhost:8080/) to see the GraalVM website running.
 
 4. Stop the running container. Find out the container image ID and stop it:
     ```bash

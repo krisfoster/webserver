@@ -25,17 +25,17 @@ For other installation options, visit the <a href="https://www.graalvm.org/downl
 </code></pre>
   </li>
   <li>Build the project:
-    <pre><code class="language-shell"> mvn clean package
+    <pre><code class="language-shell"> ./mvnw clean package
 </code></pre>
   </li>
   <li>When the build succeeds, run the application on the JVM with the <a href="https://graalvm.github.io/native-build-tools/latest/maven-plugin.html#agent-support">Tracing agent</a>. Since you have installed GraalVM, it will run on GraalVM JDK.
-    <pre><code class="language-shell"> mvn -Pnative -Dagent exec:exec@java-agent
+    <pre><code class="language-shell"> ./mvnw -Pnative -Dagent exec:exec@java-agent
 </code></pre>
     <p>The application will return a random saying. 
  The agent generates the configuration files in the <code>target/native/agent-output</code> subdirectory.</p>
   </li>
   <li>Build a native executable of this application with GraalVM Native Image and Maven:
-    <pre><code class="language-shell"> mvn -Pnative -Dagent package
+    <pre><code class="language-shell"> ./mvnw -Pnative -Dagent package
 </code></pre>
     <p>When the command completes, a native executable, <code>fortune</code>, is generated in the <code>/target</code> directory of the project and ready for use.</p>
   </li>
@@ -94,16 +94,16 @@ For other installation options, visit the <a href="https://www.graalvm.org/downl
   <li>Change to the project directory and build the project:
     <pre><code class="language-shell"> cd ../staticfortune
 </code></pre>
-    <pre><code class="language-shell"> mvn clean package
+    <pre><code class="language-shell"> ./mvnw clean package
 </code></pre>
   </li>
   <li>Run the application on the JVM (GraalVM JDK) with the <a href="https://graalvm.github.io/native-build-tools/latest/maven-plugin.html#agent-support">Tracing agent</a>:
-    <pre><code class="language-shell"> mvn -Pnative -Dagent exec:exec@java-agent
+    <pre><code class="language-shell"> ./mvnw -Pnative -Dagent exec:exec@java-agent
 </code></pre>
     <p>The application will print a random saying. The agent generates the configuration files in the <code>target/native/agent-output</code> subdirectory.</p>
   </li>
   <li>Build a static native executable:
-    <pre><code class="language-shell"> mvn -Pnative -Dagent package
+    <pre><code class="language-shell"> ./mvnw -Pnative -Dagent package
 </code></pre>
     <p>When the command completes, a native executable, <code>staticfortune</code>, is generated in the <code>/target</code> directory of the project and ready for use.</p>
   </li>

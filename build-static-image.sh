@@ -1,14 +1,12 @@
 #!/bin/sh
 
-TOOLCHAIN_DIR=`pwd`/x86_64-linux-musl-native
-CC=${TOOLCHAIN_DIR}/bin/gcc
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+TOOLCHAIN_DIR=${SCRIPT_DIR}/musl-toolchain
 PATH=${TOOLCHAIN_DIR}/bin:${PATH}
 
 # Create a statically linked binary that can be used without any additional library dependencies; optimize for size
-mvn -Dmaven.test.skip=true -Pfully-static native:compile
+./mvnw -Dmaven.test.skip=true -Pnative,fully-static native:compile
 
 # Scratch-nothing
 docker build . -f Dockerfile.scratch.static -t webserver:scratch.static
-
-# Alpine-no glibc
-# docker build . -f Dockerfile.alpine.static -t webserver:alpine.static
